@@ -20,13 +20,15 @@ export async function scoreLeads(req, res) {
 
     const results = [];
     for (const lead of uploadedLeads) {
+      // Exclude Mongo internal fields from update doc
+      const { _id, batchId: _batch, __v, ...leadData } = lead;
       const rule_score = scoreByRules(lead, offer);
       const ai = await scoreByAI(lead, offer);
       const score = Math.min(100, rule_score + ai.points);
       const result = await LeadResult.findOneAndUpdate(
         { name: lead.name, company: lead.company, offerId: offer._id },
         {
-          ...lead,
+          ...leadData,
           intent: ai.intent,
           score,
           reasoning: ai.reasoning,
