@@ -44,7 +44,8 @@ export async function scoreLeads(req, res) {
 
     return res.json({ processed: results.length, batchId });
   } catch (err) {
-    return res.status(500).json({ error: 'Failed to score leads' });
+    console.error('scoreLeads error:', err?.message || err, err?.stack);
+    return res.status(500).json({ error: 'Failed to score leads', details: err?.message || undefined });
   }
 }
 

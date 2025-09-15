@@ -52,22 +52,47 @@ LinkedIn Bio: ${lead.linkedin_bio}
 
 Task: Classify buying intent as High, Medium, or Low and explain in 1-2 sentences. Respond strictly as JSON with keys intent and reasoning.`;
 
-  const { response } = await model.generateContent(prompt);
-  const text = response.text();
-  try {
-    const parsed = JSON.parse(text.replace(/```json|```/g, ''));
-    const intent = ['High', 'Medium', 'Low'].includes(parsed.intent) ? parsed.intent : 'Low';
-    const mapping = { High: 50, Medium: 30, Low: 10 };
-    return { intent, points: mapping[intent], reasoning: parsed.reasoning || '' };
-  } catch (_e) {
-    // Fallback simple heuristic if parsing fails
-    const mapping = { High: 50, Medium: 30, Low: 10 };
-    let intent = 'Low';
-    if (/high/i.test(text)) intent = 'High';
-    else if (/medium/i.test(text)) intent = 'Medium';
-    const points = mapping[intent];
-    return { intent, points, reasoning: text.slice(0, 240) };
+  // retry policy for transient 5xx/overload errors
+  const maxAttempts = 3;
+  const baseDelayMs = 500; // exponential backoff base
+  let lastErrorText = '';
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const { response } = await model.generateContent(prompt);
+      const text = response.text();
+      try {
+        const parsed = JSON.parse(text.replace(/```json|```/g, ''));
+        const intent = ['High', 'Medium', 'Low'].includes(parsed.intent) ? parsed.intent : 'Low';
+        const mapping = { High: 50, Medium: 30, Low: 10 };
+        return { intent, points: mapping[intent], reasoning: parsed.reasoning || '' };
+      } catch (_e) {
+        // Fallback simple heuristic if parsing fails
+        const mapping = { High: 50, Medium: 30, Low: 10 };
+        let intent = 'Low';
+        if (/high/i.test(text)) intent = 'High';
+        else if (/medium/i.test(text)) intent = 'Medium';
+        const points = mapping[intent];
+        return { intent, points, reasoning: text.slice(0, 240) };
+      }
+    } catch (err) {
+      const message = err?.message || String(err);
+      lastErrorText = message;
+      // If not last attempt, wait with backoff and retry
+      if (attempt < maxAttempts) {
+        const delay = baseDelayMs * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 200);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+      break;
+    }
   }
+
+  // Final safe fallback if API is unavailable after retries
+  return {
+    intent: 'Low',
+    points: 10,
+    reasoning: `AI unavailable: ${lastErrorText || 'transient error'}. Used conservative score.`,
+  };
 }
 
 

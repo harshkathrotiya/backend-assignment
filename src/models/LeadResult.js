@@ -18,9 +18,9 @@ const LeadResultSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model('LeadResult', LeadResultSchema);
-
 // Ensure unique per lead+company+offer to prevent duplicates on re-scoring
 LeadResultSchema.index({ name: 1, company: 1, offerId: 1 }, { unique: true });
+
+export default mongoose.model('LeadResult', LeadResultSchema);
 
 
