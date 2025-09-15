@@ -68,7 +68,6 @@ curl -X POST https://kuvaka-api.onrender.com/leads/upload \
 ```
 Response: `{ "uploaded": N }`
 
-### POST /score
 Scores uploaded leads using rules + Gemini.
 ```
 curl -X POST https://kuvaka-api.onrender.com/score

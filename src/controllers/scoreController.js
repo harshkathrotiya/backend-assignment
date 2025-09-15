@@ -14,19 +14,19 @@ export async function scoreLeads(_req, res) {
       const rule_score = scoreByRules(lead, offer);
       const ai = await scoreByAI(lead, offer);
       const score = Math.min(100, rule_score + ai.points);
-      const exists = await LeadResult.findOne({ name: lead.name, company: lead.company }).lean();
-      if (exists) {
-        continue; // simple de-dup based on name+company
-      }
-      const result = await LeadResult.create({
-        ...lead,
-        intent: ai.intent,
-        score,
-        reasoning: ai.reasoning,
-        rule_score,
-        ai_points: ai.points,
-        offerId: offer._id,
-      });
+      const result = await LeadResult.findOneAndUpdate(
+        { name: lead.name, company: lead.company, offerId: offer._id },
+        {
+          ...lead,
+          intent: ai.intent,
+          score,
+          reasoning: ai.reasoning,
+          rule_score,
+          ai_points: ai.points,
+          offerId: offer._id,
+        },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+      );
       results.push(result);
     }
 
