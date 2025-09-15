@@ -1,13 +1,22 @@
 import Offer from '../models/Offer.js';
 import LeadResult from '../models/LeadResult.js';
-import { uploadedLeads } from './leadsController.js';
+import LeadStaging from '../models/LeadStaging.js';
 import { scoreByRules, scoreByAI } from '../services/scoring.js';
 
-export async function scoreLeads(_req, res) {
+export async function scoreLeads(req, res) {
   try {
     const offer = await Offer.findOne().sort({ createdAt: -1 }).lean();
-    if (!offer) return res.status(400).json({ error: 'No offer found. Create one first.' });
-    if (!uploadedLeads.length) return res.status(400).json({ error: 'No leads uploaded.' });
+    if (!offer) {
+      return res.status(400).json({ error: 'No offer found. Create one first.' });
+    }
+    const { batchId } = req.body || {};
+    if (!batchId) {
+      return res.status(400).json({ error: 'batchId is required. Upload leads first.' });
+    }
+    const uploadedLeads = await LeadStaging.find({ batchId }).lean();
+    if (!uploadedLeads.length) {
+      return res.status(400).json({ error: 'No leads found for batchId.' });
+    }
 
     const results = [];
     for (const lead of uploadedLeads) {
@@ -30,10 +39,10 @@ export async function scoreLeads(_req, res) {
       results.push(result);
     }
 
-    // clear uploaded leads after scoring
-    uploadedLeads.length = 0;
+    // clear staging for this batch
+    await LeadStaging.deleteMany({ batchId });
 
-    return res.json({ processed: results.length });
+    return res.json({ processed: results.length, batchId });
   } catch (err) {
     return res.status(500).json({ error: 'Failed to score leads' });
   }
