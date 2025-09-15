@@ -30,7 +30,8 @@ Health check: `GET http://localhost:8080/health`
 - `LeadResult`: lead fields + intent, score, reasoning, rule_score, ai_points, offerId
 
 ## API Reference
-Base URL: `http://localhost:8080`
+Base URL (local): `http://localhost:8080`
+Base URL (live): `https://kuvaka-api.onrender.com`
 
 ### POST /offer
 Create or update offer context.
@@ -47,7 +48,7 @@ Create or update offer context.
 
 Curl
 ```
-curl -X POST http://localhost:8080/offer \
+curl -X POST https://kuvaka-api.onrender.com/offer \
   -H 'Content-Type: application/json' \
   -d '{
     "name":"AI Outreach Automation",
@@ -62,7 +63,7 @@ curl -X POST http://localhost:8080/offer \
 ### POST /leads/upload
 Upload CSV with headers: name,role,company,industry,location,linkedin_bio
 ```
-curl -X POST http://localhost:8080/leads/upload \
+curl -X POST https://kuvaka-api.onrender.com/leads/upload \
   -F file=@leads.csv
 ```
 Response: `{ "uploaded": N }`
@@ -70,14 +71,14 @@ Response: `{ "uploaded": N }`
 ### POST /score
 Scores uploaded leads using rules + Gemini.
 ```
-curl -X POST http://localhost:8080/score
+curl -X POST https://kuvaka-api.onrender.com/score
 ```
 Response: `{ "processed": N }`
 
 ### GET /results
 Fetch results JSON array.
 ```
-curl http://localhost:8080/results
+curl https://kuvaka-api.onrender.com/results
 ```
 
 ### GET /results/export
@@ -115,4 +116,4 @@ Runs a quick rule-layer check that prints scores.
 - Uploaded leads are stored in-memory until `/score` is called; results are persisted in MongoDB.
 
 ## Live URL
-Add your Render base URL here for testing.
+https://kuvaka-api.onrender.com
